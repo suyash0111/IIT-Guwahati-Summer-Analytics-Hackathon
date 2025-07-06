@@ -11,21 +11,23 @@ This project implements a real-time dynamic pricing engine for urban parking lot
   * **Demand-Based**: Composite demand scoring (occupancy, queue length, traffic, special days, vehicle type).
   * **Competitive**: Considers neighboring lot prices and occupancy, with rerouting suggestions when lots exceed 90% capacity.
 * **Interactive Visualizations**: Bokeh-generated HTML plots displaying price trends and occupancy rates.
+* **Google Colab Integration**: File upload via `google.colab.files` for seamless data ingestion.
 * **Extensible Architecture**: Easily add new pricing strategies by subclassing the base `PricingModel`.
 
 ## 🛠️ Tech Stack
 
+* **Environment**: Google Colab / Jupyter
 * **Language**: Python 3.x
-* **Data**: Pandas, NumPy
+* **Data Handling**: Pandas, NumPy
 * **Visualization**: Bokeh
-* **GUI**: Tkinter (for file upload dialog)
-* **I/O**: CSV, Excel, JSON
+* **File I/O**: `google.colab.files` for uploads, CSV, Excel, JSON
+* **Scheduling & Timing**: `datetime`, `time`
 
 ## ⚙️ Architecture
 
 ```mermaid
 flowchart LR
-  A[File Selection] --> B[DataLoader]
+  A[Colab File Uploader] --> B[DataLoader]
   B --> C[Preprocessing]
   C --> D[RealTimePricingEngine]
   D --> E{Pricing Models}
@@ -43,60 +45,58 @@ flowchart LR
 
 1. **Data Loading & Generation**
 
-   * **File Upload**: `DataLoader.upload_file()` uses Tkinter to prompt for a CSV/Excel file.
-   * **Sample Data**: If no file is provided or loading fails, `generate_sample_data()` creates synthetic parking data (14 spaces × 73 days × 18 timepoints).
+   * **Google Colab Upload**: `DataLoader.upload_file()` uses `google.colab.files.upload()` to import a CSV/Excel file.
+   * **Sample Data Fallback**: If not in Colab or upload fails, `generate_sample_data()` synthesizes realistic parking data (14 spaces × 73 days × 18 time slots).
 
 2. **Data Preprocessing**
 
-   * **Column Mapping**: Auto-detects known column names (e.g., `id` → `space_id`, `queuelength` → `queue_length`).
-   * **Missing Column Handling**: Fills defaults for any absent required fields.
-   * **Timestamp Construction**: Combines `date` & `time` or parses existing `timestamp`; defaults to a regular time series if absent.
-   * **Feature Engineering**: Calculates `occupancy_rate`, `hour`, `day_of_week`, normalized `queue_length_norm`, `traffic_level_norm`, and `vehicle_weight`.
+   * **Column Mapping**: Maps user-provided column names (e.g., `id` → `space_id`, `queuelength` → `queue_length`).
+   * **Handling Missing Fields**: Adds defaults for any missing required columns (e.g., occupancy, capacity).
+   * **Timestamp Assembly**: Combines separate `date` & `time` into a unified `timestamp`, or parses existing timestamps, or generates a standard time series.
+   * **Feature Engineering**: Computes derived features—`occupancy_rate`, `hour`, `day_of_week`, normalized `queue_length_norm`, `traffic_level_norm`, and `vehicle_weight` based on type.
 
 3. **Real-Time Pricing Simulation**
 
-   * **Engine Initialization**: `RealTimePricingEngine` registers three models (Linear, Demand-Based, Competitive).
-   * **Batch Processing**: Groups records by timestamp and iterates in simulated real-time (configurable `delay_seconds`).
-   * **Model Calculations**:
+   * **Engine Initialization**: `RealTimePricingEngine` sets up three model instances (Linear, Demand-Based, Competitive).
+   * **Stream Processing**: Groups data by timestamp and iterates with configurable `delay_seconds` to mimic live updates.
+   * **Pricing Models**:
 
-     * **Linear Model**: Adjusts price by α × occupancy\_rate.
-     * **Demand-Based Model**: Computes demand score combining occupancy, queue, traffic, special days, and vehicle type; applies a tanh-based normalization.
-     * **Competitive Model**: Inherits Demand-Based logic, finds nearby competitors via Euclidean distance, then modulates price based on competitor prices and occupancy; issues rerouting suggestions if >90% full.
-   * **Price History Logging**: Each model updates its price history per space per timestamp.
-   * **Rerouting Module**: Suggests alternative spaces when current lot occupancy >90% and nearby space utilization <70%.
+     * **Linear Model**: Adjusts price incrementally by α × occupancy\_rate.
+     * **Demand-Based Model**: Calculates a demand score incorporating queue lengths, traffic levels, and special events, then scales via tanh.
+     * **Competitive Model**: Extends Demand-Based logic, identifies nearby competitors via Euclidean distance, and adjusts pricing and rerouting suggestions when necessary.
+   * **History Tracking**: Each model logs price history per space.
 
-4. **Results Compilation & Export**
+4. **Compilation & Export**
 
-   * **DataFrame Assembly**: `get_results_dataframe()` consolidates all pricing decisions into a pandas DataFrame.
+   * **Results Assembly**: `get_results_dataframe()` consolidates model outputs into a pandas DataFrame.
    * **Persistence**:
 
-     * **CSV**: Saves `pricing_results.csv` with full results.
-     * **JSON**: Writes `model_configuration.json` capturing hyperparameters and timestamp.
+     * **CSV**: Exports `pricing_results.csv` containing all pricing decisions.
+     * **JSON**: Saves `model_configuration.json` with hyperparameters and run metadata.
 
-5. **Visualization & Reporting**
+5. **Visualization & Analysis**
 
-   * **Interactive Plots**: `PricingVisualizer.create_price_comparison_plot()` builds Bokeh line charts for selected spaces, overlaying model prices and occupancy trends; saved as `parking_prices_visualization.html`.
-   * **Performance Summary**: `create_summary_statistics()` prints aggregate and space-wise metrics (average, range, CV) and rerouting frequency.
+   * **Bokeh Plots**: `PricingVisualizer.create_price_comparison_plot()` generates interactive HTML showing price trajectories and occupancy overlays.
+   * **Summary Statistics**: `create_summary_statistics()` outputs aggregate metrics and rerouting recommendation rates in the Colab logs.
 
-## 📥 Installation & Usage
+## 📥 Installation & Usage in Colab
 
-1. Clone the repository:
+1. Open this notebook in Google Colab.
+2. Ensure dependencies are installed:
 
-   ```bash
-   git clone https://github.com/yourusername/parking-pricing.git
-   cd parking-pricing
+   ```python
+   !pip install pandas numpy bokeh
    ```
-2. Install dependencies:
+3. Run all cells.
+4. When prompted, upload your CSV/Excel dataset via the Colab file picker.
+5. View interactive plots saved as HTML and download output files.
 
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the simulation:
+## 📂 Files Generated
 
-   ```bash
-   python dynamic_pricing.py
-   ```
-4. Select your data file (CSV/Excel) or let the script generate sample data.
+* `pricing_results.csv` & `model_configuration.json` (in Colab file system)
+* `parking_prices_visualization.html` (downloadable interactive visualization)
+
+
 
 
 
