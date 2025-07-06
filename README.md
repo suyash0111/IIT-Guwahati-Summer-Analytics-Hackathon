@@ -1,8 +1,8 @@
 # IIT-Guwahati-Summer-Analytics-Hackathon
-Project Overview: 
+##  Project Overview: 
 This project implements a real-time dynamic pricing engine for urban parking lots, simulating three complementary pricing strategies—Linear, Demand-Based, and Competitive models—and generating rerouting recommendations when lots exceed capacity. The pipeline includes data ingestion (CSV/Excel or generated sample), preprocessing and feature engineering, pricing calculation per timepoint, storage of price history, and interactive visualizations with Bokeh. The end-to-end simulation outputs pricing results, visual reports, and model configuration files for reproducibility.
 
-## 🚀 Features
+### 🚀 Features
 
 * **Real-Time Simulation**: Processes 30-minute interval data streams for multiple parking spaces.
 * **Three Pricing Models**:
